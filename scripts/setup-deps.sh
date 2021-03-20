@@ -41,11 +41,12 @@ then
     pushd $LLVM_SYS_SRC
 
     cp build.rs build-rel.rs
-    sed -i 's/env::var_os(\&\*ENV_LLVM_PREFIX)/Some("\.\.\/llvm-project-llvmorg-11\.0\.1\/llvm\/build\/")/' build-rel.rs
 
-    # we expect the system host to have a dynamically linked version of LLVM
+    # we expect that if you're debugging, you have a dynamically linked LLVM for quick debug builds
     curl https://gitlab.com/benjaminrsherman/llvm-sys.rs/-/raw/dynlib/build.rs \
         -o build-dbg.rs
+    
+    sed -i 's/llvm_config\("--libnames"\)/"libLLVM-11.so"' build-dbg.rs
 
     popd
 fi
