@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tinkerlang'",
+            "preLaunchTask": "mode debug",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tinkerlang",
+                    "--package=tinkerlang"
+                ],
+                "filter": {
+                    "name": "tinkerlang",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tinkerlang'",
+            "preLaunchTask": "mode debug",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tinkerlang",
+                    "--package=tinkerlang"
+                ],
+                "filter": {
+                    "name": "tinkerlang",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -5,6 +5,10 @@
 # forcibly set it in the build.rs script... not pretty, but PLEASE submit a PR
 # that fixes it. like, this doesn't work <https://doc.rust-lang.org/cargo/reference/build-scripts.html#overriding-build-scripts>
 # it just says unused manifest key or some BS
+#
+# to make matters worse, i'm actually switching on which llvm-sys we build if
+# we're in release versus debug mode :)))
+#   ^ making a single line change takes ~1.5 MINUTES... hence, dynamic linking in debug
 
 set -e
 
@@ -36,7 +40,12 @@ then
 
     pushd $LLVM_SYS_SRC
 
-    sed -i 's/env::var_os(\&\*ENV_LLVM_PREFIX)/Some("\.\.\/llvm-project-llvmorg-11\.0\.1\/llvm\/build\/")/' build.rs
+    cp build.rs build-rel.rs
+    sed -i 's/env::var_os(\&\*ENV_LLVM_PREFIX)/Some("\.\.\/llvm-project-llvmorg-11\.0\.1\/llvm\/build\/")/' build-rel.rs
+
+    # we expect the system host to have a dynamically linked version of LLVM
+    curl https://gitlab.com/benjaminrsherman/llvm-sys.rs/-/raw/dynlib/build.rs \
+        -o build-dbg.rs
 
     popd
 fi
