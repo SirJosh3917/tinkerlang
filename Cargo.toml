@@ -12,3 +12,4 @@ panic = 'abort'
 [dependencies]
 quick-js = "0.4.1"
 inkwell = { path = "./scripts/inkwell", features = ["llvm11-0"] }
+lld-sys = { path = "lld-sys" }

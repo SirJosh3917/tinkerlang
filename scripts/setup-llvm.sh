@@ -28,14 +28,37 @@ fi
 
 pushd $LLVM_ARCHIVE_OUT/llvm
 
+# https://llvm.org/docs/Packaging.html#c-features
+# we need RTTI because otherwise when we try to statically link we can't
+# and the error message looks similar to this one https://issues.apache.org/jira/browse/ARROW-5148
+export REQUIRES_RTTI=1
+
 if ! [[ -d build ]]
 then
     cmake -B build \
         -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
         -DBUILD_SHARED_LIBS=OFF \
-        -DLLVM_ENABLE_Z3_SOLVER=ON
+        -DLLVM_ENABLE_Z3_SOLVER=ON \
+        -DLLVM_ENABLE_RTTI=ON
 fi
 
+# we "rebuild" LLVM every time incase the user restarts the script and the
+# build didn't complete (often, for the purposes of adjusting the level of
+# parallelism of which LLVM is built)
 cmake --build build --config Release
 
 popd
+
+LLVM_CONFIG_PATH=$(realpath $LLVM_ARCHIVE_OUT)/llvm/build/bin/llvm-config
+
+if ! [[ -d $LLVM_ARCHIVE_OUT/lld/build ]]
+then
+    pushd $LLVM_ARCHIVE_OUT/lld
+
+    cmake -B build \
+        -DLLVM_CONFIG_PATH="$LLVM_CONFIG_PATH"
+
+    cmake --build build --config Release
+
+    popd
+fi
