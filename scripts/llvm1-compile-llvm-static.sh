@@ -5,10 +5,23 @@ echo ""
 echo "       compiles LLVM from source, statically linked"
 echo "       this is used when building in release mode"
 echo ""
-echo "   !!! [WARNING] -- building LLVM takes a long time"
+echo "     ! [NOTTICE] -- building LLVM takes a long time"
 echo "       set the CMAKE_BUILD_PARALLEL_LEVEL option before running this script"
 echo ""
 echo "           $ CMAKE_BUILD_PARALLEL_LEVEL=16 ./llvm1-compile-llvm-static.sh"
+
+if [ -z ${CMAKE_BUILD_PARALLEL_LEVEL+x} ]
+then
+
+echo ""
+echo "   !!! [WARNING] -- CMAKE_BUILD_PARALLEL_LEVEL not set"
+echo "       building LLVM with no parallelism seems like a bad idea. if you intend to"
+echo "       not set CMAKE_BUILD_PARALLEL_LEVEL, the build will commence in 3 seconds."
+echo "       if you want parallelism, please quit the script (CTRL + C) now."
+
+    sleep 5
+
+fi
 
 set -e
 
@@ -22,6 +35,8 @@ pushd $LLVM_ARCHIVE_OUT/llvm
 export REQUIRES_RTTI=1
 
 cmake -B build_static \
+    `# install into place where libs can be found` \
+    -DCMAKE_INSTALL_PREFIX:PATH=/usr \
     `# configure for static` \
     -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
     -DBUILD_SHARED_LIBS=OFF \

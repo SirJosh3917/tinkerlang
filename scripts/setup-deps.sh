@@ -40,13 +40,43 @@ then
 
     pushd $LLVM_SYS_SRC
 
-    cp build.rs build-rel.rs
+    mv build.rs build_rel.rs
 
     # we expect that if you're debugging, you have a dynamically linked LLVM for quick debug builds
     curl https://gitlab.com/benjaminrsherman/llvm-sys.rs/-/raw/dynlib/build.rs \
-        -o build-dbg.rs
+        -o build_dbg.rs
     
-    sed -i 's/llvm_config\("--libnames"\)/"libLLVM-11.so"' build-dbg.rs
+    sed -i 's/llvm_config("--libnames")/"libLLVM-11.so"/' build_dbg.rs
+
+    # setup a build.rs script to conditionally switch between build.rs
+    # implementations on debug/release to use dynamic/static linking
+    cat <<'EOF' > build.rs
+extern crate cc;
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
+extern crate semver;
+
+mod build_dbg;
+mod build_rel;
+
+fn main() {
+    #[cfg(debug_assertions)]
+    build_dbg::main();
+    #[cfg(not(debug_assertions))]
+    build_rel::main();
+}
+EOF
+
+    # fidaddle with the two build scripts
+    sed -i 's/fn main/pub fn main/' build_dbg.rs
+    sed -i 's/fn main/pub fn main/' build_rel.rs
+
+    sed -i 's/extern crate/\/\/ extern crate/' build_dbg.rs
+    sed -i 's/extern crate/\/\/ extern crate/' build_rel.rs
+
+    sed -i 's/#\[macro_use\]/\/\/ #\[macro_use\]/' build_dbg.rs
+    sed -i 's/#\[macro_use\]/\/\/ #\[macro_use\]/' build_rel.rs
 
     popd
 fi
