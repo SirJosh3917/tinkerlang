@@ -20,6 +20,13 @@ jobs:
         sudo apt-get install -y llvm-dev
 
     - uses: actions/checkout@v2
+    
+    - name: Setup Dependencies
+      run: |
+        pushd scripts
+        chmod +x ./setup-deps.sh
+        ./setup-deps.sh
+        popd
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --release
