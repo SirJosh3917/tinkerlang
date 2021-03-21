@@ -1,10 +1,6 @@
-name: Rust
+name: Nightly Build
 
-on:
-  push:
-    branches: [ main, github-actions ]
-  pull_request:
-    branches: [ main, github-actions ]
+on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
