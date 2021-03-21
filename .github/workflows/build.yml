@@ -1,0 +1,35 @@
+name: Nightly Build
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install LLVM
+      run: |
+        sudo apt-get install -y llvm-11-dev liblld-11-dev
+
+    - uses: actions/checkout@v2
+    - name: Setup Dependencies
+      run: |
+        pushd scripts
+        chmod +x ./setup-deps.sh
+        ./setup-deps.sh
+        popd
+
+    - name: Build
+      run: |
+        cargo build --verbose --release
+        strip ./target/release/tinkerlang
+
+    - name: Upload Binary
+      uses: actions/upload-artifact@v2.2.2
+      with:
+        name: tinkerlang-linux
+        path: ./target/release/tinkerlang
