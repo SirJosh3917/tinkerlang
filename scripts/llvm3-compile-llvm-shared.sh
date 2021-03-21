@@ -6,11 +6,6 @@ echo "     ! [OPTIONAL] -- only necessary for development"
 echo ""
 echo "       compiles LLVM from source, dynamically linked"
 echo "       shared libs are built to speed up building a debug binary"
-echo ""
-echo "     ! [NOTICE] -- building LLVM takes a long time"
-echo "       set the CMAKE_BUILD_PARALLEL_LEVEL option before running this script"
-echo ""
-echo "           $ CMAKE_BUILD_PARALLEL_LEVEL=16 ./llvm1-compile-llvm-static.sh"
 
 if [ -z ${CMAKE_BUILD_PARALLEL_LEVEL+x} ]
 then
@@ -20,6 +15,10 @@ echo "   !!! [WARNING] -- CMAKE_BUILD_PARALLEL_LEVEL not set"
 echo "       building LLVM with no parallelism seems like a bad idea. if you intend to"
 echo "       not set CMAKE_BUILD_PARALLEL_LEVEL, the build will commence in 5 seconds."
 echo "       if you want parallelism, please quit the script (CTRL + C) now."
+echo ""
+echo "       recommended to set the CMAKE_BUILD_PARALLEL_LEVEL option"
+echo ""
+echo "           $ CMAKE_BUILD_PARALLEL_LEVEL=16 ./llvm3-compile-llvm-shared.sh"
 
     sleep 5
 
@@ -32,8 +31,6 @@ LLVM_ARCHIVE_OUT="llvm-project-llvmorg-11.0.1"
 pushd $LLVM_ARCHIVE_OUT/llvm
 
 cmake -B build_shared \
-    `# install into place where libs can be found` \
-    -DCMAKE_INSTALL_PREFIX:PATH=/usr \
     `# configure for dynamic` \
     -DLLVM_STATIC_LINK_CXX_STDLIB=OFF \
     -DLLVM_BUILD_LLVM_DYLIB=ON \

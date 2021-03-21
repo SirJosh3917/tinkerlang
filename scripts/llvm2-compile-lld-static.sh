@@ -15,6 +15,10 @@ echo "   !!! [WARNING] -- CMAKE_BUILD_PARALLEL_LEVEL not set"
 echo "       building LLD with no parallelism seems like a bad idea. if you intend to"
 echo "       not set CMAKE_BUILD_PARALLEL_LEVEL, the build will commence in 5 seconds."
 echo "       if you want parallelism, please quit the script (CTRL + C) now."
+echo ""
+echo "       recommended to set the CMAKE_BUILD_PARALLEL_LEVEL option"
+echo ""
+echo "           $ CMAKE_BUILD_PARALLEL_LEVEL=16 ./llvm2-compile-lld-static.sh"
 
     sleep 5
 
@@ -29,9 +33,7 @@ pushd $LLVM_ARCHIVE_OUT/lld
 
 cmake -B build_static \
     `# idk why but it gets picky if we don't put the path manually` \
-    -DLLVM_CONFIG_PATH="$LLVM_CONFIG_PATH" \
-    `# install into place where libs can be found` \
-    -DCMAKE_INSTALL_PREFIX:PATH=/usr
+    -DLLVM_CONFIG_PATH="$LLVM_CONFIG_PATH"
 
 cmake --build build_static --config Release
 
