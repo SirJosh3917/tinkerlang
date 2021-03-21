@@ -33,6 +33,7 @@ jobs:
         strip ./target/release/tinkerlang
 
     - name: Upload Binary
-      with: actions/upload-artifact@v2.2.2
+      uses: actions/upload-artifact@v2.2.2
+      with:
         name: tinkerlang-linux
         path: ./target/release/tinkerlang
