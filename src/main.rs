@@ -1,21 +1,19 @@
+#![feature(exclusive_range_pattern)]
+
 extern crate inkwell;
 
-use std::{
-    collections::{HashMap, VecDeque},
-    fs::File,
-    io::Read,
-    marker::PhantomData,
-    path::Path,
-};
+use std::marker::PhantomData;
 
 use inkwell::targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target};
 use inkwell::values::BasicValue;
 use inkwell::{context::Context, targets::TargetMachine};
 use inkwell::{module::Linkage, OptimizationLevel};
 use lld_sys::{llvm_ArrayRef_size_type, llvm_raw_ostream};
-use quick_js::JsValue;
+use lowerer::Lowerer;
 use structopt::StructOpt;
-use tree_sitter::{Language, Parser, TreeCursor};
+use tree_sitter::{Language, Parser};
+
+mod lowerer;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tinkerlang", about = "Prototype a programming language.")]
@@ -41,35 +39,17 @@ struct TinkerlangOptions {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(debug_assertions)]
     let options = TinkerlangOptions {
         parser: "javascript".to_owned(),
         input: "../ex.js".to_owned(),
         lowerer: "../l.js".to_owned(),
-    }; // TinkerlangOptions::from_args();
-
-    let mut input = String::new();
-    File::open(options.input)
-        .expect("expected to open file")
-        .read_to_string(&mut input)
-        .expect("expected to read input into string");
-
-    // https://github.com/tree-sitter/tree-sitter/blob/05f79f0f902984788d983886df325ff6c967a3d6/cli/src/loader.rs#L349-L362
-    let lib_path = dirs::home_dir()
-        .unwrap()
-        .join(format!(".tree-sitter/bin/{}.so", options.parser));
-    let lib_path = Path::canonicalize(lib_path.as_path()).unwrap();
-    let parser_lib =
-        unsafe { libloading::Library::new(lib_path) }.expect("expected to read parser library");
-
-    let lang_fn_name = format!("tree_sitter_{}", options.parser.replace("-", "_"));
-    let language = unsafe {
-        parser_lib
-            .get::<unsafe extern "C" fn() -> Language>(lang_fn_name.as_bytes())
-            .expect("expected to load language symbol")
     };
-    let language = unsafe { language() };
+    #[cfg(not(debug_assertions))]
+    let options = TinkerlangOptions::from_args();
 
-    std::mem::forget(parser_lib);
+    let language = load_language(options.parser.as_str());
+    let input = std::fs::read_to_string(options.input).expect("expected to read input into string");
 
     let mut parser = Parser::new();
     parser
@@ -78,92 +58,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tree = parser.parse(input.as_str(), None).unwrap();
 
-    let mut cursor = tree.root_node().walk();
+    let lowerer = Lowerer::new(input.as_str(), tree);
 
-    let tree = JsValue::Object(walk_recurse(input.as_str(), &mut cursor));
+    let lowerer_src =
+        std::fs::read_to_string(options.lowerer).expect("expected to read lowerer into string");
 
-    fn walk_recurse(src: &str, cursor: &mut TreeCursor) -> HashMap<String, JsValue> {
-        let mut children = Vec::new();
-
-        if cursor.goto_first_child() {
-            loop {
-                children.push(JsValue::Object(walk_recurse(src, cursor)));
-
-                if !cursor.goto_next_sibling() {
-                    break;
-                }
-            }
-
-            let goto_parent = cursor.goto_parent();
-            debug_assert!(goto_parent);
-        }
-
-        let mut map = HashMap::new();
-
-        map.insert(
-            "type".to_owned(),
-            JsValue::String(cursor.node().kind().to_owned()),
-        );
-
-        let start = cursor.node().start_byte();
-        let end = cursor.node().end_byte();
-
-        assert!(
-            start < u32::MAX as usize,
-            "expected start position to be less than {}",
-            u32::MAX
-        );
-        assert!(
-            end < u32::MAX as usize,
-            "expected end position to be less than {}",
-            u32::MAX
-        );
-
-        let start = start as u32;
-        let end = end as u32;
-        let range_in_64_bits = (start as u64) << 32 | end as u64;
-        let range_as_fp = unsafe { std::mem::transmute::<u64, f64>(range_in_64_bits) };
-
-        map.insert("value".to_owned(), JsValue::Float(range_as_fp));
-
-        map.insert("children".to_owned(), JsValue::Array(children));
-
-        map
-    }
-
-    let ctx = quick_js::Context::builder()
-        .console(|a, b: Vec<JsValue>| {
-            let first_item = match b.iter().next().unwrap() {
-                JsValue::String(str) => str,
-                _ => panic!(),
-            };
-
-            println!("{}", first_item);
-        })
-        .build()
-        .unwrap();
-
-    let closure_input = input.clone();
-    ctx.add_callback("toValue", move |range: f64| {
-        let as_bits = unsafe { std::mem::transmute::<f64, u64>(range) };
-        let start = (as_bits >> 32) as u32 as usize;
-        let end = as_bits as u32 as usize;
-
-        closure_input[start..end].to_owned()
-    })
-    .expect("it to work");
-
-    ctx.set_global("tree", tree)
-        .expect("to be able to set global tree");
-
-    let mut lowerer = String::new();
-    File::open(options.lowerer)
-        .expect("expected to open file")
-        .read_to_string(&mut lowerer)
-        .expect("expected to read input into string");
-
-    let result = ctx
-        .eval(lowerer.as_str())
+    let result = lowerer
+        .exec(lowerer_src.as_str())
         .expect("to run lowerer successfully");
 
     println!("got result: {:?}", result);
@@ -239,4 +140,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     Ok(())
+}
+
+fn load_language(lang_name: &str) -> Language {
+    let lib_path = dirs::home_dir()
+        .unwrap()
+        .join(format!(".tree-sitter/bin/{}.so", lang_name))
+        .canonicalize()
+        .unwrap();
+
+    let parser_lib =
+        unsafe { libloading::Library::new(lib_path) }.expect("expected to read parser library");
+
+    let lang_fn_name = format!("tree_sitter_{}", lang_name.replace("-", "_"));
+
+    let language = unsafe {
+        parser_lib
+            .get::<unsafe extern "C" fn() -> Language>(lang_fn_name.as_bytes())
+            .expect("expected to load language symbol")()
+    };
+
+    std::mem::forget(parser_lib);
+
+    language
 }
