@@ -13,3 +13,8 @@ panic = 'abort'
 quick-js = "0.4.1"
 inkwell = { path = "./scripts/inkwell", features = ["llvm11-0"] }
 lld-sys = { path = "lld-sys" }
+clap = "2.33.3"
+structopt = "0.3.21"
+tree-sitter = "0.19.3"
+libloading = "0.7.0"
+dirs = "3.0.1"
