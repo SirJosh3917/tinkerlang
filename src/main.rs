@@ -8,12 +8,14 @@ use inkwell::targets::{CodeModel, FileType, InitializationConfig, RelocMode, Tar
 use inkwell::values::BasicValue;
 use inkwell::{context::Context, targets::TargetMachine};
 use inkwell::{module::Linkage, OptimizationLevel};
+use ir::IrBuilder;
 use lld_sys::{llvm_ArrayRef_size_type, llvm_raw_ostream};
 use lowerer::Lowerer;
 use structopt::StructOpt;
 use tree_sitter::{Language, Parser};
 
-mod lowerer;
+pub(crate) mod ir;
+pub(crate) mod lowerer;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tinkerlang", about = "Prototype a programming language.")]
@@ -57,8 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("expected to set language");
 
     let tree = parser.parse(input.as_str(), None).unwrap();
-
-    let lowerer = Lowerer::new(input.as_str(), tree);
+    let lowerer = Lowerer::new(input.as_str(), tree, |ctx| IrBuilder::new(ctx));
 
     let lowerer_src =
         std::fs::read_to_string(options.lowerer).expect("expected to read lowerer into string");
@@ -67,25 +68,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .exec(lowerer_src.as_str())
         .expect("to run lowerer successfully");
 
-    println!("got result: {:?}", result);
-
-    println!(" --> rust:");
     let context = Context::create();
-    let module = context.create_module("sum");
-    let builder = context.create_builder();
+    let llvm_module = lowerer.make_llvm(&context);
 
-    // ==> create adder function
-    let i32_type = context.i32_type();
-    let fn_type = i32_type.fn_type(&[], false);
-    let function = module.add_function("main", fn_type, Some(Linkage::External));
-    let basic_block = context.append_basic_block(function, "entry");
+    // let module = context.create_module("sum");
+    // let builder = context.create_builder();
 
-    builder.position_at_end(basic_block);
+    // // ==> create adder function
+    // let i32_type = context.i32_type();
+    // let fn_type = i32_type.fn_type(&[], false);
+    // let function = module.add_function("main", fn_type, Some(Linkage::External));
+    // let basic_block = context.append_basic_block(function, "entry");
 
-    let retval = i32_type.const_int(69, false);
-    retval.set_name("retval");
+    // builder.position_at_end(basic_block);
 
-    builder.build_return(Some(&retval));
+    // let retval = i32_type.const_int(69, false);
+    // retval.set_name("retval");
+
+    // builder.build_return(Some(&retval));
 
     // ==> make binary
     Target::initialize_all(&InitializationConfig::default());
@@ -104,10 +104,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("couldn't make target machine");
 
     target_machine
-        .write_to_file(&module, FileType::Object, "ret69.o".as_ref())
+        .write_to_file(&llvm_module, FileType::Object, "ret69.o".as_ref())
         .expect("couldn't write to disk");
 
-    println!(" --> lld:");
     // https://stackoverflow.com/a/30705769
     // ld.lld -L/usr/lib64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/crt1.o /usr/lib64/crti.o -lc main.o /usr/lib64/crtn.o
     let args = vec![

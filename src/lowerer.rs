@@ -6,13 +6,20 @@ use std::{
 };
 use tree_sitter::{Tree, TreeCursor};
 
+use crate::ir::IrBuilder;
+
 pub struct Lowerer {
     context: Context,
+    ir_builder: IrBuilder,
 }
 
 impl Lowerer {
-    pub fn new(source: &str, tree: Tree) -> Self {
-        let context = Context::builder()
+    pub fn new<F: FnOnce(&mut Context) -> IrBuilder>(
+        source: &str,
+        tree: Tree,
+        ir_builder_factory: F,
+    ) -> Self {
+        let mut context = Context::builder()
             .console(|level, args: Vec<JsValue>| {
                 let mut arg_builder = String::new();
                 for arg in args.iter() {
@@ -36,16 +43,29 @@ impl Lowerer {
         context
             .add_callback("toValue", move |range: f64| {
                 let range = f64_to_range(range);
-
                 source_clone[range].to_owned()
             })
             .expect("expected to add callback `toValue`");
 
-        Lowerer { context }
+        let ir_builder = ir_builder_factory(&mut context);
+
+        Lowerer {
+            context,
+            ir_builder,
+        }
     }
 
     pub fn exec(&self, lowerer_src: &str) -> Result<JsValue, ExecutionError> {
         self.context.eval(lowerer_src)
+    }
+
+    pub fn make_llvm<'ctx>(
+        &self,
+        context: &'ctx inkwell::context::Context,
+    ) -> inkwell::module::Module<'ctx> {
+        let mut module = context.create_module("tinkerlang_module");
+        self.ir_builder.hydrate(&context, &mut module);
+        module
     }
 }
 
