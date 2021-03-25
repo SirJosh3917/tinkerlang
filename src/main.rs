@@ -5,9 +5,8 @@ extern crate inkwell;
 use std::marker::PhantomData;
 
 use inkwell::targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target};
-use inkwell::values::BasicValue;
+use inkwell::OptimizationLevel;
 use inkwell::{context::Context, targets::TargetMachine};
-use inkwell::{module::Linkage, OptimizationLevel};
 use ir::IrBuilder;
 use lld_sys::{llvm_ArrayRef_size_type, llvm_raw_ostream};
 use lowerer::Lowerer;
@@ -64,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let lowerer_src =
         std::fs::read_to_string(options.lowerer).expect("expected to read lowerer into string");
 
-    let result = lowerer
+    lowerer
         .exec(lowerer_src.as_str())
         .expect("to run lowerer successfully");
 

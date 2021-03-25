@@ -31,13 +31,13 @@ var __compiler_type;
 
 /** @typedef {{__methodid_FAKE_FOR_SAKE_OF_TYPES: unknown}} MethodId */
 
-/** @typedef {(name: string, return_type: TypeId, parameters: TypeId[]) => MethodId} CompilerGenerateMethod */
-/** @type {CompilerGenerateMethod} */
-var __compiler_generate_method;
-
 /** @typedef {(method_id: MethodId) => void} CompilerSetMain */
 /** @type {CompilerSetMain} */
 var __compiler_set_main;
+
+/** @typedef {(name: string, return_type: TypeId, parameters: TypeId[]) => MethodId} CompilerGenerateMethod */
+/** @type {CompilerGenerateMethod} */
+var __compiler_generate_method;
 
 /** @typedef {{__blockid_FAKE_FOR_SAKE_OF_TYPES: unknown}} BlockId */
 
@@ -96,11 +96,11 @@ const { context, bool, i8, i16, i32, i64, u8, u16, u32, u64 } = (() => {
 
         /**
          * @param {Register} rResult 
-         * @param {MethodId} method 
+         * @param {Method | Block} methodOrBlock 
          * @param {Register[]} rParams 
          */
-        call(rResult, method, rParams) {
-            this.emit("call", [rResult, method, rParams]);
+        call(rResult, methodOrBlock, rParams) {
+            this.emit("call", [rResult, methodOrBlock.id ?? methodOrBlock.methodId, rParams]);
             return this;
         }
 
@@ -140,10 +140,10 @@ const { context, bool, i8, i16, i32, i64, u8, u16, u32, u64 } = (() => {
         }
 
         /**
-         * @param {Method} method
+         * @param {Method | Block} methodOrBlock
          */
-        setMain(method) {
-            __compiler_set_main(method.id);
+        setMain(methodOrBlock) {
+            __compiler_set_main(methodOrBlock.id ?? methodOrBlock.methodId);
         }
     }();
 
