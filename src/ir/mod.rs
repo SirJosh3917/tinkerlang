@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use self::js_boundary::{JsMeta, JsMetaHandle};
+use self::js_boundary::JsMetaHandle;
 
 pub(crate) mod emit;
 pub(crate) mod js_boundary;
@@ -15,10 +13,10 @@ impl IrBuilder {
         Self { meta }
     }
 
-    pub fn hydrate(
+    pub fn hydrate<'ctx>(
         &self,
-        context: &inkwell::context::Context,
-        module: &mut inkwell::module::Module,
+        context: &'ctx inkwell::context::Context,
+        module: &mut inkwell::module::Module<'ctx>,
     ) {
         emit::hydrate(&self.meta, context, module)
     }

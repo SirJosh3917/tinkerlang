@@ -1,18 +1,13 @@
-use std::{
-    ptr::read_unaligned,
-    sync::{Arc, Mutex},
-};
-
-use inkwell::values::BasicValue;
 use quick_js::JsValue;
+use std::sync::{Arc, Mutex};
 
 pub type JsMetaHandle = Arc<Mutex<JsMeta>>;
 
 #[derive(Debug, Clone)]
 pub struct JsMeta {
-    main_id: Option<MethodId>,
-    types: Vec<TypeDefinition>,
-    methods: Vec<MethodDefinition>,
+    pub(crate) main_id: Option<MethodId>,
+    pub(crate) types: Vec<TypeDefinition>,
+    pub(crate) methods: Vec<MethodDefinition>,
 }
 
 pub type TypeId = i32;
@@ -69,16 +64,16 @@ impl JsMeta {
 
 #[derive(Debug, Clone)]
 pub struct TypeDefinition {
-    signed: bool,
-    bits: u32,
+    pub(crate) signed: bool,
+    pub(crate) bits: u32,
 }
 
 #[derive(Debug, Clone)]
 pub struct MethodDefinition {
-    name: String,
-    return_type: TypeId,
-    parameters: Vec<TypeId>,
-    blocks: Vec<BlockDefinition>,
+    pub(crate) name: String,
+    pub(crate) return_type: TypeId,
+    pub(crate) parameters: Vec<TypeId>,
+    pub(crate) blocks: Vec<BlockDefinition>,
 }
 
 impl MethodDefinition {
@@ -99,8 +94,8 @@ impl MethodDefinition {
 
 #[derive(Debug, Clone)]
 pub struct BlockDefinition {
-    name: String,
-    instructions: Vec<Instruction>,
+    pub(crate) name: String,
+    pub(crate) instructions: Vec<Instruction>,
 }
 
 type Register = i32;

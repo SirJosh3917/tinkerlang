@@ -70,21 +70,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let context = Context::create();
     let llvm_module = lowerer.make_llvm(&context);
 
-    // let module = context.create_module("sum");
-    // let builder = context.create_builder();
-
-    // // ==> create adder function
-    // let i32_type = context.i32_type();
-    // let fn_type = i32_type.fn_type(&[], false);
-    // let function = module.add_function("main", fn_type, Some(Linkage::External));
-    // let basic_block = context.append_basic_block(function, "entry");
-
-    // builder.position_at_end(basic_block);
-
-    // let retval = i32_type.const_int(69, false);
-    // retval.set_name("retval");
-
-    // builder.build_return(Some(&retval));
+    let ir = llvm_module.print_to_string().to_string();
+    println!("LLVM IR:\n{}", ir);
 
     // ==> make binary
     Target::initialize_all(&InitializationConfig::default());
