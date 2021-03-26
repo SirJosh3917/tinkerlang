@@ -44,7 +44,7 @@ jobs:
         echo 'ENTRYPOINT ["./tinkerlang"]' >> Dockerfile
 
     - name: Publish to Github Packages
-      uses: docker/build-push-action@v2.3.0
+      uses: docker/build-push-action@v1
       with:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
