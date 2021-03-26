@@ -1,5 +1,3 @@
-#![feature(exclusive_range_pattern)]
-
 extern crate inkwell;
 
 use std::marker::PhantomData;
