@@ -84,10 +84,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "generic",
             "",
             OptimizationLevel::Aggressive,
-            RelocMode::Static,
+            RelocMode::PIC,
             CodeModel::Default,
         )
         .expect("couldn't make target machine");
+
+    let buff = target_machine
+        .write_to_memory_buffer(&llvm_module, FileType::Assembly)
+        .expect("couldn't compile to assembly");
+
+    println!(
+        "Assembly:\n{}",
+        String::from_utf8(buff.as_slice().to_vec()).unwrap()
+    );
 
     target_machine
         .write_to_file(&llvm_module, FileType::Object, "ret69.o".as_ref())
@@ -121,7 +130,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             false,
             &mut (*lld_sys::llvm_outs())._base._base as *mut llvm_raw_ostream,
             &mut (*lld_sys::llvm_errs())._base._base as *mut llvm_raw_ostream,
-        )
+        );
     };
 
     Ok(())

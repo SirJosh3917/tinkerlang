@@ -162,6 +162,18 @@ pub fn hydrate<'ctx>(meta: &JsMetaHandle, context: &'ctx Context, module: &mut M
 
                         builder.build_return(ret.as_deref());
                     }
+                    Instruction::Truncate {
+                        result,
+                        truncate_into,
+                        source,
+                    } => {
+                        let source = registers.get(source).unwrap();
+                        let truncate_into = &llvm_types[*truncate_into as usize];
+
+                        let result_reg =
+                            builder.build_int_truncate(*source, truncate_into.int_type, "");
+                        registers.insert(*result, result_reg);
+                    }
                     _ => panic!("unhandled instruction"),
                 }
             }

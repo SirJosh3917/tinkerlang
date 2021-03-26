@@ -111,6 +111,16 @@ const { context, bool, i8, i16, i32, i64, u8, u16, u32, u64 } = (() => {
             this.emit("ret", [rResult]);
             return this;
         }
+
+        /**
+         * @param {Register} rResult
+         * @param {TypeId} rType
+         * @param {Register} rSource
+         */
+        truncate(rResult, rType, rSource) {
+            this.emit("trunc", [rResult, rType, rSource]);
+            return this;
+        }
     }
 
     class Method {

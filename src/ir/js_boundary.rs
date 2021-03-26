@@ -121,6 +121,11 @@ pub enum Instruction {
         method_id: MethodId,
         parameters: Vec<Register>,
     },
+    Truncate {
+        result: Register,
+        source: Register,
+        truncate_into: TypeId,
+    },
     Return {
         result: Option<Register>,
     },
@@ -141,6 +146,7 @@ impl Instruction {
             "ld_const" => Instruction::des_ld_const(is_valid, args),
             "call" => Instruction::des_call(args),
             "ret" => Instruction::des_ret(args),
+            "trunc" => Instruction::des_trunc(args),
             _ => panic!("unrecognized instruction {}", name),
         }
     }
@@ -206,6 +212,18 @@ impl Instruction {
     fn des_ret(mut args: Vec<JsValue>) -> Instruction {
         Instruction::Return {
             result: args.pop().map(Instruction::get_register),
+        }
+    }
+
+    fn des_trunc(mut args: Vec<JsValue>) -> Instruction {
+        let source = Instruction::get_register(args.pop().unwrap());
+        let truncate_into = Instruction::get_type_id(args.pop().unwrap());
+        let result = Instruction::get_register(args.pop().unwrap());
+
+        Instruction::Truncate {
+            result,
+            truncate_into,
+            source,
         }
     }
 
