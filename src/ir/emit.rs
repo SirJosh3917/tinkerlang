@@ -7,7 +7,7 @@ use inkwell::{
     module::{Linkage, Module},
     types::{FunctionType, IntType},
     values::BasicValue,
-    values::{FunctionValue, IntValue},
+    values::FunctionValue,
 };
 
 pub struct LLVMType<'ctx> {
@@ -132,7 +132,6 @@ pub fn hydrate<'ctx>(meta: &JsMetaHandle, context: &'ctx Context, module: &mut M
                                 builder.build_int_add(llvm_type.int_type.const_zero(), value, "");
                             registers.insert(*result, const_reg);
                         }
-                        _ => todo!(),
                     },
                     Instruction::Call {
                         result,
@@ -174,7 +173,6 @@ pub fn hydrate<'ctx>(meta: &JsMetaHandle, context: &'ctx Context, module: &mut M
                             builder.build_int_truncate(*source, truncate_into.int_type, "");
                         registers.insert(*result, result_reg);
                     }
-                    _ => panic!("unhandled instruction"),
                 }
             }
         }

@@ -8,7 +8,17 @@ TinkerLang is a tool that allows you to quickly prototype programming languages,
 
 At this time, the docker image isn't polished, but it is usable. Simply pull the docker image from the [docker packages list][docker-packages]. If you get an error pulling, you may need to [authenticate with GitHub][pull-github-cr].
 
-Then, run the docker image. Mount `a.out` to get the output binary, and you should be able to run that in an docker container that bases off of `ubuntu:focal` (or smaller others). Pass in the lowerer, input, and tree-sitter binary to their correct places (you may have to mount the tree sitter binary into `/root/.tree-sitter/bin/<name>.so`, but I haven't tested this yet), and in theory it *should* work. This is currently very WIP and highly rushed, so it may not work.
+Then, run the docker image. Mount `a.out` to get the output binary, and you should be able to run that in an docker container that bases off of `ubuntu:focal` (or smaller others). Pass in the lowerer, input, and tree-sitter binary to their correct places.
+
+```
+docker run --rm \
+    -v ~/.tree-sitter/:/root/.tree-sitter/ \
+    -v $PWD/input:/input \
+    -v $PWD/lowerer:/lowerer \
+    -v $PWD/a.out:/a.out \
+        docker.pkg.github.com/sirjosh3917/tinkerlang/latest:main \
+    --input input --parser javascript --lowerer lowerer
+```
 
 ## Getting Started
 
@@ -95,8 +105,16 @@ declare function toValue(value: NodeValue): string;
 [tree-sitter]: https://tree-sitter.github.io/tree-sitter/
 [llvm]: https://llvm.org/
 [docker]: https://www.docker.com/
+<<<<<<< Updated upstream
 [pull-github-cr]: https://docs.github.com/en/packages/guides/pushing-and-pulling-docker-images
 [docker-packages]: https://github.com/SirJosh3917/tinkerlang/packages
+=======
+<<<<<<< Updated upstream
+=======
+[pull-github-cr]: https://docs.github.com/en/packages/guides/configuring-docker-for-use-with-github-packages
+[docker-packages]: https://github.com/SirJosh3917/tinkerlang/packages
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 [generate-a-parser-with-tree-sitter]: https://tree-sitter.github.io/tree-sitter/creating-parsers
 [nightly-build]: https://github.com/SirJosh3917/tinkerlang/actions/workflows/build.yml
 [primer.js]: https://github.com/SirJosh3917/tinkerlang/tree/main/src/ir/primer.js

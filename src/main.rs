@@ -1,6 +1,6 @@
 extern crate inkwell;
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, path::PathBuf};
 
 use inkwell::targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target};
 use inkwell::OptimizationLevel;
@@ -100,18 +100,83 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .write_to_file(&llvm_module, FileType::Object, "ret69.o".as_ref())
         .expect("couldn't write to disk");
 
+    // try to be nice and automatically find the C libs
+
+    // TODO: ==> TODO START ==> how do we cleanup finding libs
+    let o_files = ["crt1.o", "crti.o", "crtn.o"];
+    let search_dirs = [
+        "/usr/lib64/",                // on my machine at least
+        "/usr/lib/x86_64-linux-gnu/", // for the docker machine
+    ];
+
+    let mut lib_dir = None;
+
+    for dir in search_dirs.iter() {
+        let mut doesnt_exist = false;
+
+        for file in o_files.iter() {
+            let path = PathBuf::from(dir).join(file);
+
+            if !path.exists() {
+                doesnt_exist = true;
+                break;
+            }
+        }
+
+        if doesnt_exist {
+            continue;
+        }
+
+        lib_dir = Some(dir);
+        break;
+    }
+
+    if let None = lib_dir {
+        panic!(
+            "couldn't find C libs at their dirs {:?} {:?}",
+            o_files, search_dirs
+        );
+    }
+
+    let lib_dir = lib_dir.unwrap();
+
+    let c_libs = o_files
+        .iter()
+        .map(|file| {
+            let mut s = String::new();
+            s.push_str(lib_dir);
+            s.push_str(file);
+            s.push('\0');
+            s
+        })
+        .collect::<Vec<_>>();
+
+    let mut flag_L = String::new();
+    flag_L.push_str("-L");
+    flag_L.push_str(lib_dir);
+    flag_L.push('\0');
+
+    let dynamic_linker = if PathBuf::from("/lib64/ld-linux-x86-64.so.2").exists() {
+        "/lib64/ld-linux-x86-64.so.2\0"
+    } else if PathBuf::from("/usr/lib64/ld-linux-x86-64.so.2").exists() {
+        "/usr/lib64/ld-linux-x86-64.so.2\0"
+    } else {
+        panic!("unable to find dynamic linker")
+    };
+    // TODO: <== TODO END <== how do we cleanup finding libs
+
     // https://stackoverflow.com/a/30705769
     // ld.lld -L/usr/lib64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/crt1.o /usr/lib64/crti.o -lc main.o /usr/lib64/crtn.o
     let args = vec![
         "ld.lld\0",
-        "-L/usr/lib64\0",
-        "-dynamic-linker\0",
+        flag_L.as_str(),
+        dynamic_linker,
         "/lib64/ld-linux-x86-64.so.2\0",
-        "/usr/lib64/crt1.o\0",
-        "/usr/lib64/crti.o\0",
+        c_libs[0].as_str(),
+        c_libs[1].as_str(),
         "-lc\0",
         "ret69.o\0",
-        "/usr/lib64/crtn.o\0",
+        c_libs[2].as_str(),
     ]
     .into_iter()
     .map(|s| s.as_ptr() as *const i8)
