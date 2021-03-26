@@ -33,3 +33,21 @@ jobs:
       with:
         name: tinkerlang-linux
         path: ./target/release/tinkerlang
+
+    - name: Setup Docker Context
+      run: |
+        echo '**' > .dockerignore
+        echo '!/target/release/tinkerlang' >> .dockerignore
+        
+        echo 'FROM ubuntu:focal' > Dockerfile
+        echo 'COPY ./target/release/tinkerlang .' >> Dockerfile
+        echo 'ENTRYPOINT ["./tinkerlang"]' >> Dockerfile
+
+    - name: Publish to Github Packages
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        registry: docker.pkg.github.com
+        repository: sirjosh3917/tinkerlang/latest
+        tag_with_ref: true
